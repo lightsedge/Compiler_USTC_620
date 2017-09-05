@@ -1,0 +1,57 @@
+
+Alias Analysis and Mod/Ref Information
+
+
+Alias Analysis也被称为Pointer Analysis，用于分析两个指针是否可能指向内存中的同一个对象。它对代码进行静态分析，对程序的数据结构进行构建。Alias analysis可以回答以下形式的询问：
+alias(p1, s1, p2, s2)
+其中P1、P2为程序中的指针，S1、S2为整形常量，代表以字节为单位的对应指针指向区域的大小。
+回答为下列三种形式之一：
+MustAlias：P1和P2等同
+NoAlias：P1与P2指向的空间没有交集
+MayAlias：无法判断
+
+有了以上信息，编译器就可以准确地对代码进行更激进的优化。比如当对两块没有交集的内存区域进行memmove操作时，编译器可以将memmove优化为memcpy。
+
+
+例如如下两个例子：
+
+(1)
+%1=*P1
+*P2=%2
+%3=*P1
+
+如果alias analysis能够得出P1和P2为NoAlias的结论，编译器就可以将
+t3=*P1
+优化为
+%3=%1
+从而减少一次load操作
+
+(2)
+
+do {
+	t1=*P1
+	…
+	*P2=t2
+}
+
+同样，如果alias analysis能够得出P1和P2为NoAlias的结论，编译器就可以将
+t1=*P1
+提升到循环外部。
+
+LLVM Infrastructure中提供了Alias Analysis的工具，我们可以方便的调用这些分析结果，编写自己的Pass来实现各种功能和优化。
+
+Mod/Ref Information
+
+Mod/ref analysis 也是属于静态分析。它可以对形式为
+modref(I, P, S)
+的询问给出回答。其中I是一条基本操作，P是一个指针，S是一个整形常量，代表区域的大小。回答有四种形式：
+NoModRef: I没有接触过P指向的空间
+Ref: I可能读取过P指向空间的内容，但是未修改过
+Mod: I可能修改过P指向空间的内容，但是未读取过
+ModRef: I可能修改和读取过P指向空间的内容
+
+类似的，Mod/ref analysis也能给出所询问的两个基本指令之间的依赖关系。询问的形式为modref(I1, I2)，给出的回答与上面一种基本形式类似。
+
+
+
+

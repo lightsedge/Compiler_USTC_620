@@ -1,0 +1,4 @@
+http://llvm.org/docs/AliasAnalysis.html#the-getmodrefinfo-methods
+http://llvm.org/docs/Passes.html
+http://llvm.org/docs/WritingAnLLVMPass.html
+

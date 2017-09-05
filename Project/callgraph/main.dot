@@ -1,0 +1,12 @@
+digraph {
+	label="main的函数调用图";
+	main[label="main\n在文件main.c中第9行左右定义"];
+	A[label="A\n在文件main.c中定义"];
+	B[label="B\n在文件main.c中定义"];
+	C[label="C\n在文件main.c中定义"];
+	C -> A[label="递归环",color=red];
+	B -> C;
+	A -> B;
+	A[color=blue];
+	main -> A[color=blue];
+}

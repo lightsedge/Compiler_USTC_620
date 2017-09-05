@@ -1,0 +1,32 @@
+include_directories(../../../../../projects/poolalloc/include)
+
+add_clang_executable(callgraph
+	BackendInfoDB.cpp
+	FPAnalysis.cpp
+	main.cpp
+	ModuleInfo.cpp
+	MultiFileCallGraph.cpp
+)
+
+target_link_libraries(callgraph 
+	clangTooling
+	clangFrontendTool
+	clangFrontend
+	clangDriver
+	clangSerialization
+	clangCodeGen
+	clangParse
+	clangSema
+	clangStaticAnalyzerFrontend 
+	clangStaticAnalyzerCheckers
+	clangStaticAnalyzerCore
+	clangARCMigrate
+	clangRewriteFrontend 
+	clangRewriteCore
+	clangAnalysis
+	clangEdit
+	clangAST
+	clangBasic
+	clangLex
+    LLVMDataStructure
+)
