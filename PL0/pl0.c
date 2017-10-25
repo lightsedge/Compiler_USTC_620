@@ -1,9 +1,16 @@
 // pl0 compiler source code
+
 /*
 SYM = symbol 记号名
 char 单个字符/符元	
 identifier 标识符
+relop = relation operator 关系运算符
 
+*/
+
+/*
+1.每当调用一个语法匹配过程时, 其首记号已经被读入 sym 了, 所以要保证 调用其他过程 或 离开该过程 前读入下一个记号,
+当然也要注意一个过程返回后 sym 中已经是下一个记号了
 */
 
 #pragma warning(disable:4996)
@@ -185,6 +192,7 @@ void getsym(void)
 } // getsym
 
 //////////////////////////////////////////////////////////////////////
+//每次调用生成一条汇编代码, 存放在全局数组 code[] 中
 // generates (assembles) an instruction.
 void gen(int x, int y, int z)
 {
@@ -217,7 +225,7 @@ void test(symset s1, symset s2, int n)
 //////////////////////////////////////////////////////////////////////
 int dx;  // data allocation index
 
-//符号表管理
+//代码生成
 // enter object(constant, variable or procedre) into table.
 void enter(int kind)
 {
@@ -441,19 +449,31 @@ void expression(symset fsys)
 //////////////////////////////////////////////////////////////////////
 void condition(symset fsys)
 {
-	int relop;
+	int relop;		//临时存放关系运算符
 	symset set;
+
+
+	//“条件”的短路计算
+	if(sym == SYM_THEN || sym == SYM_DO){
+		error(33);
+	}
+
 
 	if (sym == SYM_ODD)
 	{
 		getsym();
+
 		expression(fsys);
+
 		gen(OPR, 0, 6);
 	}
+
 	else
 	{
 		set = uniteset(relset, fsys);
+
 		expression(set);
+
 		destroyset(set);
 		if (! inset(sym, relset))
 		{
@@ -463,7 +483,9 @@ void condition(symset fsys)
 		{
 			relop = sym;
 			getsym();
+
 			expression(fsys);
+
 			switch (relop)
 			{
 			case SYM_EQU:

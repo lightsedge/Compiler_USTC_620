@@ -66,7 +66,7 @@ enum oprcode
 	OPR_GEQ
 };
 
-
+//汇编指令 = 指令种类 + 嵌套深度 + 位移值(即具体的指令码)
 typedef struct
 {
 	int f; // function code
@@ -109,7 +109,9 @@ char* err_msg[] =
 /* 29 */    "",
 /* 30 */    "",
 /* 31 */    "",
-/* 32 */    "There are too many levels."
+/* 32 */    "There are too many levels.",
+
+/* 33 */	"Condition expected"
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -127,7 +129,7 @@ int  tx = 0;
 
 char line[80];	//储存一行的所有字符
 
-instruction code[CXMAX];
+instruction code[CXMAX];	//汇编指令数组
 
 char* word[NRW + 1] =		//自动为这些字符串分配了存储空间,并且其首地址存放在 word[] 中
 							//多出来的第一位存放临时的
@@ -157,12 +159,30 @@ int ssym[NSYM + 1] =
 	SYM_EQU, 
 	SYM_COMMA, 
 	SYM_PERIOD, 
-	SYM_SEMICOLON
+	SYM_SEMICOLON,
+
+	SYM_AND,
+	SYM_OR,
+	SYM_NOT
 };
 
 char csym[NSYM + 1] =
 {
-	' ', '+', '-', '*', '/', '(', ')', '=', ',', '.', ';'
+	' ', 
+	'+', 
+	'-', 
+	'*', 
+	'/', 
+	'(', 
+	')', 
+	'=', 
+	',', 
+	'.', 
+	';',
+
+	'&&',
+	'||',
+	'!'
 };
 
 #define MAXINS   8
