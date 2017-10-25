@@ -1,5 +1,11 @@
 // pl0 compiler source code
-// 测试
+/*
+SYM = symbol 记号名
+char 单个字符/符元	
+identifier 标识符
+
+*/
+
 #pragma warning(disable:4996)
 
 
@@ -12,7 +18,7 @@
 #include "set.c"
 
 //////////////////////////////////////////////////////////////////////
-// print error message.
+// print error message.错误诊断处理
 void error(int n)
 {
 	int i;
@@ -26,59 +32,77 @@ void error(int n)
 } // error
 
 //////////////////////////////////////////////////////////////////////
-void getch(void)
-{
-	if (cc == ll)
+//词法分析
+//返回下一个字符, 存放在 全局量ch 中
+//仅在 getsym() 中被调用
+void getch(void)	//返回下一个字符. 实际一次读入一行, 然后每次调用返回一个字符, 直到该行的字符全部返回完, 此时读取下一行
+					//ll 是该行总字符数, cc 是已经返回到哪个字符的计数
+{					
+	if (cc == ll)	//此 if 结构只在要读入新的一行时被执行
 	{
-		if (feof(infile))
+		///识别且跳过行结束符
+		if (feof(infile))	//feof 检测流上的文件结束符, 文件有结束符则返回非0, 没有结束符(意味着不是完整的文件)则返回非0
 		{
 			printf("\nPROGRAM INCOMPLETE\n");
 			exit(1);
 		}
 		ll = cc = 0;
-		printf("%5d  ", cx);
-		while ( (!feof(infile)) // added & modified by alex 01-02-09
-			    && ((ch = getc(infile)) != '\n'))
+		printf("%5d  ", cx);	///产生一份程序列表，输出相应行号或指令计数器的值
+		while ( (!feof(infile)) //读取该行的下一个字符
+			    && ((ch = getc(infile)) != '\n'))	//识别且跳过回车符
 		{
-			printf("%c", ch);
-			line[++ll] = ch;
+			printf("%c", ch);	///将输入源文件复写到输出文件
+			line[++ll] = ch;	//本次读取的字符存入 line[] 中
 		} // while
 		printf("\n");
-		line[++ll] = ' ';
+		line[++ll] = ' ';		//该行结束,line[] 的最后存入空格, 同时输出换行
 	}
-	ch = line[++cc];
+	ch = line[++cc];	//每调用一次 getch(), 返回的字符存放在 ch 中
 } // getch
 
 //////////////////////////////////////////////////////////////////////
+/*词法分析
+返回下一个词法记号的记号名, 存放在 全局量 sym 中
+同时若该记号为标识符, 值存放在 全局量 id 中; 若为数字, 值存放在全局量 num 中*/
 // gets a symbol from input stream.
 void getsym(void)
 {
 	int i, k;
-	char a[MAXIDLEN + 1];
+	char a[MAXIDLEN + 1];	//MAXIDLEN 是记号名的最大长度, a[] 用于存放标识符
+							//由于记号包括保留字, 操作符, 关键字等, 且都有可能存放在 a[] 中, 
+							//且标识符的长度最长, 所以这里用 MAXIDLEN 作为数组长度上限
 
-	while (ch == ' '||ch == '\t')
+	while (ch == ' '||ch == '\t')	///跳过分隔符(如空格，回车，制表符)(回车符在 getch() 中已跳过)
 		getch();
 
+
+	//判断正在读入的记号是否为保留字或标识符(第一个字符必须为英文字母,之后可以为数字)
+	///识别诸如 begin，end，if，while 等保留字
+	///识别非保留字的一般标识符，此标识符值(字符序列)赋给全局量 id，而全局量 sym 赋值为 SYM_IDENTIFIER
 	if (isalpha(ch))
 	{ // symbol is a reserved word or an identifier.
 		k = 0;
-		do
+		do    //完整读取该记号,当下一个字符不为字母或数字时结束读取
 		{
 			if (k < MAXIDLEN)
 				a[k++] = ch;
 			getch();
 		}
 		while (isalpha(ch) || isdigit(ch));
-		a[k] = 0;
-		strcpy(id, a);
-		word[0] = id;
-		i = NRW;
-		while (strcmp(id, word[i--]));
+
+		a[k] = 0;	//将0添加到结尾,便于 strcpy() 操作
+		strcpy(id, a);	//将记号从临时存放处 a[] 拷贝到 id[] 中(strcpy的拷贝以0作为结束符)
+		word[0] = id;	//该记号的首地址(即id[]的首地址)存入 word[0] 中
+		i = NRW;		// NRW 是保留字的数量
+		while (strcmp(id, word[i--]));	//将这个记号与各个保留字进行比较判断其是不是保留字
 		if (++i)
-			sym = wsym[i]; // symbol is a reserved word
+			sym = wsym[i]; 			//该记号是保留字
 		else
-			sym = SYM_IDENTIFIER;   // symbol is an identifier
+			sym = SYM_IDENTIFIER;   //该记号是标识符
 	}
+
+	//判断正在读入的记号是否为数字
+	///识别数字序列，当前值赋给全局量 NUM，sym 则置为 SYM_NUMBER
 	else if (isdigit(ch))
 	{ // symbol is a number.
 		k = num = 0;
@@ -93,6 +117,9 @@ void getsym(void)
 		if (k > MAXNUMLEN)
 			error(25);     // The number is too great.
 	}
+
+	//以下各分支判断正在读入的记号是否为各操作符
+	///识别:=，<=，>=之类的特殊符号，全局量 sym 则分别被赋值为SYM_BECOMES，SYM_LEQ，SYM_GTR 等
 	else if (ch == ':')
 	{
 		getch();
@@ -137,6 +164,8 @@ void getsym(void)
 			sym = SYM_LES;     // <
 		}
 	}
+
+	//未知的记号
 	else
 	{ // other tokens
 		i = NSYM;
@@ -170,7 +199,7 @@ void gen(int x, int y, int z)
 } // gen
 
 //////////////////////////////////////////////////////////////////////
-// tests if error occurs and skips all symbols that do not belongs to s1 or s2.
+// tests if error occurs and skips all symbols that do not belongs to s1 or s2. 错误诊断处理
 void test(symset s1, symset s2, int n)
 {
 	symset s;
@@ -188,6 +217,7 @@ void test(symset s1, symset s2, int n)
 //////////////////////////////////////////////////////////////////////
 int dx;  // data allocation index
 
+//符号表管理
 // enter object(constant, variable or procedre) into table.
 void enter(int kind)
 {
@@ -598,10 +628,11 @@ void statement(symset fsys)
 //////////////////////////////////////////////////////////////////////
 void block(symset fsys)
 {
+	//错误诊断处理相关
 	int cx0; // initial code index
 	mask* mk;
 	int block_dx;
-	int savedTx;
+	int savedTx;	//
 	symset set1, set;
 
 	dx = 3;
@@ -609,12 +640,16 @@ void block(symset fsys)
 	mk = (mask*) &table[tx];
 	mk->address = cx;
 	gen(JMP, 0, 0);
+
 	if (level > MAXLEVEL)
 	{
 		error(32); // There are too many levels.
 	}
+
+
 	do
 	{
+		//常类型声明块	, 调用 constdeclaration()
 		if (sym == SYM_CONST)
 		{ // constant declarations
 			getsym();
@@ -638,6 +673,7 @@ void block(symset fsys)
 			while (sym == SYM_IDENTIFIER);
 		} // if
 
+		//变量声明块, 调用 vardeclaration()
 		if (sym == SYM_VAR)
 		{ // variable declarations
 			getsym();
@@ -660,10 +696,15 @@ void block(symset fsys)
 			}
 			while (sym == SYM_IDENTIFIER);
 		} // if
+
 		block_dx = dx; //save dx before handling procedure call!
+
+		//过程块
 		while (sym == SYM_PROCEDURE)
 		{ // procedure declarations
 			getsym();
+
+			//紧跟着一个 identifier
 			if (sym == SYM_IDENTIFIER)
 			{
 				enter(ID_PROCEDURE);
@@ -674,7 +715,7 @@ void block(symset fsys)
 				error(4); // There must be an identifier to follow 'const', 'var', or 'procedure'.
 			}
 
-
+			//紧跟着一个分号
 			if (sym == SYM_SEMICOLON)
 			{
 				getsym();
@@ -684,16 +725,20 @@ void block(symset fsys)
 				error(5); // Missing ',' or ';'.
 			}
 
-			level++;
-			savedTx = tx;
+
+			level++;		//嵌套深度 +1
+			savedTx = tx;	//
 			set1 = createset(SYM_SEMICOLON, SYM_NULL);
 			set = uniteset(set1, fsys);
-			block(set);
+
+			block(set);		//递归调用, 即嵌套了下一 block()
+
 			destroyset(set1);
 			destroyset(set);
 			tx = savedTx;
 			level--;
 
+			//必须以分号结尾
 			if (sym == SYM_SEMICOLON)
 			{
 				getsym();
@@ -708,6 +753,8 @@ void block(symset fsys)
 				error(5); // Missing ',' or ';'.
 			}
 		} // while
+
+
 		dx = block_dx; //restore dx after handling procedure call!
 		set1 = createset(SYM_IDENTIFIER, SYM_NULL);
 		set = uniteset(statbegsys, set1);
@@ -723,7 +770,10 @@ void block(symset fsys)
 	gen(INT, 0, block_dx);
 	set1 = createset(SYM_SEMICOLON, SYM_END, SYM_NULL);
 	set = uniteset(set1, fsys);
+
+	//语句
 	statement(set);
+
 	destroyset(set1);
 	destroyset(set);
 	gen(OPR, 0, OPR_RET); // return

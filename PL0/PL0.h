@@ -4,10 +4,10 @@
 #define TXMAX      500    // length of identifier table
 #define MAXNUMLEN  14     // maximum number of digits in numbers
 #define NSYM       10     // maximum number of symbols in array ssym and csym
-#define MAXIDLEN   10     // length of identifiers
+#define MAXIDLEN   10     // length of identifiers,标识符不超过10个字符
 
 #define MAXADDRESS 32767  // maximum address
-#define MAXLEVEL   32     // maximum depth of nesting block
+#define MAXLEVEL   32     // maximum depth of nesting(嵌套) block
 #define CXMAX      500    // size of code array
 
 #define MAXSYM     30     // maximum number of symbols  
@@ -118,34 +118,46 @@ int  sym;        // last symbol read
 char id[MAXIDLEN + 1]; // last identifier read
 int  num;        // last number read
 int  cc;         // character count
-int  ll;         // line length
+int  ll;         // line length, 用于充当 line[] 的下标
 int  kk;
 int  err;
 int  cx;         // index of current instruction to be generated.
-int  level = 0;
+int  level = 0;  //嵌套深度
 int  tx = 0;
 
-char line[80];
+char line[80];	//储存一行的所有字符
 
 instruction code[CXMAX];
 
-char* word[NRW + 1] =
+char* word[NRW + 1] =		//自动为这些字符串分配了存储空间,并且其首地址存放在 word[] 中
+							//多出来的第一位存放临时的
 {
 	"", /* place holder */
 	"begin", "call", "const", "do", "end","if",
 	"odd", "procedure", "then", "var", "while"
 };
 
+//关键字
 int wsym[NRW + 1] =
 {
 	SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
 	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE
 };
 
+//运算符
 int ssym[NSYM + 1] =
 {
-	SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES, SYM_SLASH,
-	SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON
+	SYM_NULL, 
+	SYM_PLUS, 
+	SYM_MINUS, 
+	SYM_TIMES, 
+	SYM_SLASH,
+	SYM_LPAREN, 
+	SYM_RPAREN, 
+	SYM_EQU, 
+	SYM_COMMA, 
+	SYM_PERIOD, 
+	SYM_SEMICOLON
 };
 
 char csym[NSYM + 1] =
@@ -168,6 +180,7 @@ typedef struct
 
 comtab table[TXMAX];
 
+//
 typedef struct
 {
 	char  name[MAXIDLEN + 1];
@@ -176,6 +189,6 @@ typedef struct
 	short address;
 } mask;
 
-FILE* infile;
+FILE* infile;	//输入文件
 
 // EOF PL0.h
